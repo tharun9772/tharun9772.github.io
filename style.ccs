@@ -1,4 +1,4 @@
  body {
-      background-color: #0000;
-      color: #ffff; /* Light text color for contrast */
+      background-color: #000000;
+      color: #FFFFFF; /* Light text color for contrast */
     }
