@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>PvZ Browser Game</title>
+<style>
+  body { margin: 0; overflow: hidden; background: #222; color: white; font-family: Arial; }
+  canvas { display: block; background: #333; margin: 0 auto; }
+  #overlay {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,0.7); padding: 10px; border: 2px solid #fff;
+  }
+  #health-bar {
+    width: 200px; height: 20px; background: #555; margin-bottom: 10px;
+  }
+  #health-fill { height: 100%; width: 100%; background: red; }
+</style>
+</head>
+<body>
+
+<div id="overlay">
+  <div id="health-bar"><div id="health-fill"></div></div>
+  <p>Wave: <span id="wave">1</span></p>
+  <p>Coins: <span id="coins">0</span></p>
+  <button onclick="startNextWave()">Start Wave</button>
+</div>
+
+<canvas id="game" width="800" height="600"></canvas>
+
+<!-- Sound effects -->
+<audio id="shoot-sfx" src="https://freesound.org/data/previews/341/341695_6263744-lq.mp3"></audio>
+<audio id="zombie-dead-sfx" src="https://freesound.org/data/previews/341/341668_6263744-lq.mp3"></audio>
+
+<script>
+const canvas = document.getElementById("game"), ctx = canvas.getContext("2d");
+const shootSfx = document.getElementById("shoot-sfx"),
+      deadSfx = document.getElementById("zombie-dead-sfx");
+
+let player = { x:400, y:300, size:20, speed:3, damage:1, maxHealth:100, health:100 };
+let zombies = [], bullets = [];
+let keys = {}, coins = 0, wave = 0, zombieSpeed = 1.0, waveActive = false;
+
+// UI hooks
+const healthFill = document.getElementById("health-fill");
+const waveDisplay = document.getElementById("wave");
+const coinsDisplay = document.getElementById("coins");
+
+function updateUI(){
+  healthFill.style.width = (player.health / player.maxHealth * 100) + "%";
+  waveDisplay.textContent = wave;
+  coinsDisplay.textContent = coins;
+}
+
+function spawnWave(){
+  wave++;
+  zombies = [];
+  bullets = [];
+  zombieSpeed = 1 + wave * 0.2;
+  for(let i=0; i<wave*5; i++){
+    let edge = Math.floor(Math.random()*4);
+    let x = edge===0?0:edge===1?canvas.width:Math.random()*canvas.width;
+    let y = edge===2?0:edge===3?canvas.height:Math.random()*canvas.height;
+    zombies.push({ x, y, size:20, hp:3 + wave, id: Date.now()+i });
+  }
+  waveActive = true;
+  updateUI();
+}
+
+function startNextWave(){ if(!waveActive) spawnWave(); }
+
+function update(){
+  if(player.health<=0){ waveActive = false; return; }
+  if(keys.w) player.y -= player.speed;
+  if(keys.s) player.y += player.speed;
+  if(keys.a) player.x -= player.speed;
+  if(keys.d) player.x += player.speed;
+  player.x = Math.max(0,Math.min(canvas.width,player.x));
+  player.y = Math.max(0,Math.min(canvas.height,player.y));
+
+  zombies.forEach((z,i) => {
+    let dx = player.x - z.x, dy = player.y - z.y;
+    let dist = Math.hypot(dx,dy);
+    if(dist < z.size + player.size){
+      player.health -= 0.3;
+      if(player.health < 0) player.health = 0;
+    } else {
+      z.x += (dx / dist)*zombieSpeed;
+      z.y += (dy / dist)*zombieSpeed;
+    }
+    if(z.hp <= 0){
+      zombies.splice(i,1);
+      coins += 5;
+      deadSfx.currentTime = 0;
+      deadSfx.play();
+      updateUI();
+    }
+  });
+
+  bullets.forEach((b, bi) => {
+    b.x += b.dx*5; b.y += b.dy*5;
+    if(b.x <0||b.x>canvas.width||b.y<0||b.y>canvas.height){
+      bullets.splice(bi,1);
+      return;
+    }
+    zombies.forEach((z, zi) => {
+      if(Math.hypot(b.x-z.x, b.y-z.y) < z.size){
+        z.hp -= player.damage;
+        bullets.splice(bi,1);
+      }
+    });
+  });
+
+  if(waveActive && zombies.length===0){
+    waveActive = false;
+  }
+}
+
+function draw(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = player.color || 'cyan';
+  ctx.beginPath(); ctx.arc(player.x,player.y,player.size,0,2*Math.PI); ctx.fill();
+  zombies.forEach(z => {
+    ctx.fillStyle = "green";
+    ctx.beginPath(); ctx.arc(z.x,z.y,z.size,0,2*Math.PI); ctx.fill();
+  });
+  bullets.forEach(b => {
+    ctx.fillStyle = "yellow";
+    ctx.beginPath(); ctx.arc(b.x,b.y,5,0,2*Math.PI); ctx.fill();
+  });
+}
+
+function gameLoop(){
+  update(); draw();
+  if(player.health <= 0){
+    ctx.fillStyle='red';
+    ctx.font='48px sans-serif';
+    ctx.fillText('Game Over', 300,300);
+  } else {
+    requestAnimationFrame(gameLoop);
+  }
+}
+gameLoop();
+
+document.addEventListener("keydown",e=>keys[e.key.toLowerCase()]=true);
+document.addEventListener("keyup",e=>keys[e.key.toLowerCase()]=false);
+canvas.addEventListener("click",e=>{
+  if(!waveActive) return;
+  let angle = Math.atan2(e.clientY-player.y, e.clientX-player.x);
+  bullets.push({ x:player.x, y:player.y, dx:Math.cos(angle), dy:Math.sin(angle) });
+  shootSfx.currentTime = 0; shootSfx.play();
+});
+
+// --- Multiplayer placeholder via WebSocket ---
+// const ws = new WebSocket('wss://your-game-server.example');
+// let otherPlayers = {};
+// ws.onmessage = e => {
+//   let msg = JSON.parse(e.data);
+//   if(msg.type === 'playerUpdate') otherPlayers[msg.id]=msg.data;
+// };
+// function sendPlayerState(){
+//   ws.send(JSON.stringify({ type:'playerUpdate', data:{ x:player.x, y:player.y, health:player.health, wave } }));
+// }
+// setInterval(sendPlayerState, 50);
+// --------------------------------------------
+
+updateUI();
+</script>
+
+</body>
+</html>
