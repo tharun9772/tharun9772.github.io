@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Advanced Farming Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+
+    #game-container {
+      display: flex;
+      flex-direction: row;
+      width: 100%;
+    }
+
+    #game {
+      flex: 3;
+      display: grid;
+      grid-template-columns: repeat(10, 50px);
+      grid-template-rows: repeat(10, 50px);
+      background: #c2f0c2;
+      gap: 2px;
+    }
+
+    .tile {
+      width: 50px;
+      height: 50px;
+      background: #91c788;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      transition: background 0.3s;
+    }
+
+    .player {
+      background: #4a4a4a !important;
+      color: white;
+    }
+
+    .planted {
+      background: #ffe066;
+    }
+
+    .grown {
+      background: #2ecc71;
+    }
+
+    #shop {
+      flex: 1;
+      background: #f8f9fa;
+      padding: 20px;
+      border-left: 2px solid #ccc;
+    }
+
+    #shop h2 {
+      margin-top: 0;
+    }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 16px;
+    }
+
+    .inventory {
+      margin-top: 20px;
+      font-size: 16px;
+    }
+
+    #instructions {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="game"></div>
+    <div id="shop">
+      <h2>Farm Shop</h2>
+      <p>💰 Coins: <span id="coins">10</span></p>
+      <button onclick="buySeed()">🌱 Buy Seed (2 coins)</button>
+      <div class="inventory">
+        <p>Inventory:</p>
+        <p>🌱 Seeds: <span id="seeds">0</span></p>
+        <p>🥕 Crops: <span id="harvested">0</span></p>
+      </div>
+      <div id="instructions">
+        <strong>Controls:</strong><br>
+        W/A/S/D = Move<br>
+        Space = Plant / Harvest
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const game = document.getElementById("game");
+    const gridSize = 10;
+    let playerPos = { x: 0, y: 0 };
+    let seeds = 0;
+    let harvested = 0;
+    let coins = 10;
+    const tiles = [];
+    const crops = {}; // { "x,y": { stage: 'planted'|'grown', timer: setTimeout } }
+
+    // Build grid
+    for (let y = 0; y < gridSize; y++) {
+      for (let x = 0; x < gridSize; x++) {
+        const tile = document.createElement("div");
+        tile.classList.add("tile");
+        tile.dataset.x = x;
+        tile.dataset.y = y;
+        tiles.push(tile);
+        game.appendChild(tile);
+      }
+    }
+
+    function updateUI() {
+      document.getElementById("coins").textContent = coins;
+      document.getElementById("seeds").textContent = seeds;
+      document.getElementById("harvested").textContent = harvested;
+    }
+
+    function updateGrid() {
+      tiles.forEach(tile => {
+        const x = parseInt(tile.dataset.x);
+        const y = parseInt(tile.dataset.y);
+        const key = `${x},${y}`;
+        tile.className = "tile";
+        tile.textContent = "";
+
+        if (playerPos.x === x && playerPos.y === y) {
+          tile.classList.add("player");
+          tile.textContent = "😀";
+        } else if (crops[key]) {
+          tile.classList.add(crops[key].stage);
+          tile.textContent = crops[key].stage === "grown" ? "🥕" : "🌱";
+        }
+      });
+    }
+
+    function buySeed() {
+      if (coins >= 2) {
+        coins -= 2;
+        seeds++;
+        updateUI();
+      }
+    }
+
+    function plantOrHarvest() {
+      const key = `${playerPos.x},${playerPos.y}`;
+      const crop = crops[key];
+
+      if (crop && crop.stage === "grown") {
+        delete crops[key];
+        harvested++;
+        coins += 3; // Selling crop gives coins
+        updateUI();
+      } else if (!crop && seeds > 0) {
+        crops[key] = { stage: "planted" };
+        seeds--;
+        updateUI();
+        // Grow after 10 seconds
+        crops[key].timer = setTimeout(() => {
+          if (crops[key]) {
+            crops[key].stage = "grown";
+            updateGrid();
+          }
+        }, 10000);
+      }
+
+      updateGrid();
+    }
+
+    document.addEventListener("keydown", (e) => {
+      switch (e.key.toLowerCase()) {
+        case "w": if (playerPos.y > 0) playerPos.y--; break;
+        case "s": if (playerPos.y < gridSize - 1) playerPos.y++; break;
+        case "a": if (playerPos.x > 0) playerPos.x--; break;
+        case "d": if (playerPos.x < gridSize - 1) playerPos.x++; break;
+        case " ": plantOrHarvest(); break;
+      }
+      updateGrid();
+    });
+
+    updateUI();
+    updateGrid();
+  </script>
+</body>
+</html>
