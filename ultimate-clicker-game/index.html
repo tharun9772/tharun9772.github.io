@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ultimate Clicker Game</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #00c6ff, #0072ff);
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        color: #fff;
+    }
+    h1 { font-size: 60px; margin-bottom: 10px; }
+    .counter { font-size: 36px; margin-bottom: 30px; }
+    .click-btn {
+        font-size: 50px;
+        padding: 40px 80px;
+        border: none;
+        border-radius: 20px;
+        background-color: #ffd700;
+        color: #333;
+        box-shadow: 0 8px #c9a200;
+        cursor: pointer;
+        margin-bottom: 30px;
+    }
+    .shop {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 15px;
+        padding: 20px;
+        width: 400px;
+    }
+    .shop h2 { text-align: center; margin-bottom: 20px; }
+    .shop-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+    }
+    .shop button {
+        padding: 10px;
+        font-weight: bold;
+        background-color: #00e676;
+        border: none;
+        border-radius: 10px;
+        color: #fff;
+        cursor: pointer;
+    }
+    .golden-click {
+        display: none;
+        font-size: 30px;
+        padding: 20px;
+        margin-top: 20px;
+        background-color: gold;
+        border-radius: 20px;
+        cursor: pointer;
+    }
+</style>
+</head>
+<body>
+
+<h1>Ultimate Clicker Game</h1>
+<div class="counter">Clicks: <span id="clicks">0</span></div>
+<button class="click-btn" onclick="clickMain()">CLICK</button>
+
+<div class="shop">
+    <h2>Upgrades</h2>
+    <div class="shop-item"><span>+1 Per Click</span><button onclick="buyUpgrade('perClick')">Cost: <span id="cost-perClick">10</span></button></div>
+    <div class="shop-item"><span>Auto Clicker (+1/sec)</span><button onclick="buyUpgrade('autoClicker')">Cost: <span id="cost-autoClicker">100</span></button></div>
+    <div class="shop-item"><span>Super Clicker (+10 Clicks)</span><button onclick="buyUpgrade('superClicker')">Cost: <span id="cost-superClicker">500</span></button></div>
+    <div class="shop-item"><span>Mega Auto Clicker (+10/sec)</span><button onclick="buyUpgrade('megaAutoClicker')">Cost: <span id="cost-megaAutoClicker">2000</span></button></div>
+    <div class="shop-item"><span>Click Multiplier x2</span><button onclick="buyUpgrade('clickMultiplier')">Cost: <span id="cost-clickMultiplier">5000</span></button></div>
+    <div class="shop-item"><span>Passive Income Generator (+50/sec)</span><button onclick="buyUpgrade('passiveIncome')">Cost: <span id="cost-passiveIncome">10000</span></button></div>
+</div>
+
+<button class="golden-click" id="goldenClick" onclick="goldenClick()">✨ GOLDEN CLICK ✨</button>
+
+<script>
+let clicks = 0;
+let upgrades = {
+    perClick: { amount: 1, cost: 10 },
+    autoClicker: { amount: 0, cost: 100 },
+    superClicker: { amount: 0, cost: 500 },
+    megaAutoClicker: { amount: 0, cost: 2000 },
+    clickMultiplier: { multiplier: 1, cost: 5000 },
+    passiveIncome: { amount: 0, cost: 10000 }
+};
+
+function updateDisplay() {
+    document.getElementById("clicks").innerText = Math.floor(clicks);
+    for (let key in upgrades) {
+        document.getElementById("cost-" + key).innerText = upgrades[key].cost;
+    }
+}
+
+function clickMain() {
+    clicks += (upgrades.perClick.amount + upgrades.superClicker.amount * 10) * (upgrades.clickMultiplier.multiplier);
+    updateDisplay();
+}
+
+function buyUpgrade(type) {
+    if (clicks >= upgrades[type].cost) {
+        clicks -= upgrades[type].cost;
+        upgrades[type].cost = Math.floor(upgrades[type].cost * 1.5);
+        if (type === 'perClick') upgrades.perClick.amount++;
+        if (type === 'autoClicker') upgrades.autoClicker.amount++;
+        if (type === 'superClicker') upgrades.superClicker.amount++;
+        if (type === 'megaAutoClicker') upgrades.megaAutoClicker.amount++;
+        if (type === 'clickMultiplier') upgrades.clickMultiplier.multiplier *= 2;
+        if (type === 'passiveIncome') upgrades.passiveIncome.amount++;
+        updateDisplay();
+    }
+}
+
+function autoClick() {
+    clicks += (upgrades.autoClicker.amount + upgrades.megaAutoClicker.amount * 10 + upgrades.passiveIncome.amount * 50);
+    updateDisplay();
+}
+setInterval(autoClick, 1000);
+
+function spawnGoldenClick() {
+    document.getElementById('goldenClick').style.display = 'block';
+    setTimeout(() => document.getElementById('goldenClick').style.display = 'none', 5000);
+}
+function goldenClick() {
+    clicks += 1000;
+    updateDisplay();
+    document.getElementById('goldenClick').style.display = 'none';
+}
+setInterval(() => {
+    if (Math.random() < 0.05) spawnGoldenClick();
+}, 1000);
+
+updateDisplay();
+</script>
+
+</body>
+</html>
