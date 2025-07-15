@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tic Tac Toe</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #1d1d1d;
+    color: #fff;
+    text-align: center;
+    margin: 0;
+  }
+  h1 {
+    margin: 20px;
+  }
+  #mode-select {
+    margin: 20px;
+    font-size: 18px;
+    padding: 10px;
+  }
+  #game-board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-gap: 5px;
+    justify-content: center;
+    margin: 20px auto;
+  }
+  .cell {
+    width: 100px;
+    height: 100px;
+    background: #333;
+    font-size: 48px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .cell:hover {
+    background: #444;
+  }
+  #message {
+    font-size: 24px;
+    margin-top: 20px;
+  }
+  #restart {
+    margin-top: 20px;
+    font-size: 18px;
+    padding: 10px 20px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<h1>Tic Tac Toe</h1>
+
+<select id="mode-select">
+  <option value="pvp">Player vs Player</option>
+  <option value="pvc">Player vs Computer</option>
+</select>
+
+<div id="game-board"></div>
+
+<p id="message"></p>
+<button id="restart">Restart Game</button>
+
+<script>
+const board = document.getElementById('game-board');
+const message = document.getElementById('message');
+const restart = document.getElementById('restart');
+const modeSelect = document.getElementById('mode-select');
+
+let cells = [];
+let currentPlayer = 'X';
+let gameMode = 'pvp';
+let gameOver = false;
+
+function createBoard() {
+    board.innerHTML = '';
+    cells = [];
+    for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.addEventListener('click', () => makeMove(i));
+        board.appendChild(cell);
+        cells.push(cell);
+    }
+    message.textContent = "Player X's Turn";
+    currentPlayer = 'X';
+    gameOver = false;
+}
+
+function checkWinner() {
+    const combos = [
+        [0,1,2], [3,4,5], [6,7,8], 
+        [0,3,6], [1,4,7], [2,5,8], 
+        [0,4,8], [2,4,6]
+    ];
+    for (let combo of combos) {
+        const [a,b,c] = combo;
+        if (cells[a].textContent && cells[a].textContent === cells[b].textContent && cells[a].textContent === cells[c].textContent) {
+            gameOver = true;
+            message.textContent = `${cells[a].textContent} Wins! 🎉`;
+            return true;
+        }
+    }
+    if ([...cells].every(cell => cell.textContent)) {
+        gameOver = true;
+        message.textContent = "It's a Draw!";
+        return true;
+    }
+    return false;
+}
+
+function makeMove(index) {
+    if (cells[index].textContent || gameOver) return;
+    cells[index].textContent = currentPlayer;
+    if (checkWinner()) return;
+    if (gameMode === 'pvc' && currentPlayer === 'X') {
+        currentPlayer = 'O';
+        message.textContent = "Computer's Turn";
+        setTimeout(computerMove, 300);
+    } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        message.textContent = `Player ${currentPlayer}'s Turn`;
+    }
+}
+
+// Smarter AI: Win > Block > Random
+function computerMove() {
+    let bestMove = getBestMove('O') || getBestMove('X') || getRandomMove();
+    if (bestMove !== null) {
+        cells[bestMove].textContent = 'O';
+    }
+    if (!checkWinner()) {
+        currentPlayer = 'X';
+        message.textContent = "Player X's Turn";
+    }
+}
+
+// Tries to find winning/blocking move
+function getBestMove(player) {
+    const combos = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+    ];
+    for (let combo of combos) {
+        const [a,b,c] = combo;
+        const values = [cells[a].textContent, cells[b].textContent, cells[c].textContent];
+        if (values.filter(val => val === player).length === 2 && values.includes('')) {
+            const emptyIndex = [a,b,c].find(idx => !cells[idx].textContent);
+            return emptyIndex;
+        }
+    }
+    return null;
+}
+
+function getRandomMove() {
+    const empty = cells.map((cell, idx) => cell.textContent ? null : idx).filter(idx => idx !== null);
+    if (empty.length === 0) return null;
+    return empty[Math.floor(Math.random() * empty.length)];
+}
+
+restart.addEventListener('click', createBoard);
+modeSelect.addEventListener('change', function() {
+    gameMode = this.value;
+    createBoard();
+});
+
+createBoard();
+</script>
+
+</body>
+</html>

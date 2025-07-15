@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Idle Mining Clicker</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #eee;
+    text-align: center;
+    margin: 0;
+    padding: 20px;
+  }
+  h1 { margin: 20px; }
+  #mine-btn {
+    font-size: 24px;
+    padding: 20px 40px;
+    margin: 20px;
+    background: #444;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 12px;
+  }
+  #mine-btn:hover { background: #555; }
+  .stats {
+    font-size: 22px;
+    margin: 8px;
+  }
+  .shop {
+    margin: 30px auto;
+    width: 320px;
+    background: #333;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: left;
+  }
+  .upgrade-btn {
+    width: 100%;
+    margin-top: 10px;
+    padding: 10px;
+    font-size: 18px;
+    background: #555;
+    border: none;
+    color: #eee;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .upgrade-btn:disabled {
+    background: #222;
+    cursor: not-allowed;
+  }
+  .upgrade-btn:hover:not(:disabled) { background: #666; }
+  #achievements {
+    max-width: 320px;
+    margin: 30px auto;
+    background: #444;
+    padding: 15px;
+    border-radius: 12px;
+    text-align: left;
+  }
+  #achievements h2 {
+    margin-top: 0;
+  }
+  .achievement {
+    background: #555;
+    margin: 5px 0;
+    padding: 8px;
+    border-radius: 6px;
+  }
+  .achievement.unlocked {
+    background: #2ecc71;
+    font-weight: bold;
+  }
+</style>
+</head>
+<body>
+
+<h1>⛏️ Idle Mining Game</h1>
+
+<div class="stats">Gold: <span id="gold">0</span></div>
+<div class="stats">Gold Per Click: <span id="gpc">1</span></div>
+<div class="stats">Gold Per Second: <span id="gps">0</span></div>
+<div class="stats">Level: <span id="level">1</span> (XP: <span id="xp">0</span>/<span id="xpNext">10</span>)</div>
+
+<button id="mine-btn">Mine Gold</button>
+
+<div class="shop">
+  <h2>Shop Upgrades</h2>
+  <button id="btn-pickaxe" class="upgrade-btn">💥 Upgrade Pickaxe (+1 GPC) - Cost: <span id="click-cost">10</span></button>
+  <button id="btn-miner" class="upgrade-btn">🤖 Hire Miner (+1 GPS) - Cost: <span id="miner-cost">25</span></button>
+  <button id="btn-super-pickaxe" class="upgrade-btn" disabled>🔥 Super Pickaxe (+5 GPC) - Cost: <span id="super-pickaxe-cost">200</span></button>
+  <button id="btn-auto-miner" class="upgrade-btn" disabled>⚙️ Auto Miner (+5 GPS) - Cost: <span id="auto-miner-cost">500</span></button>
+</div>
+
+<div id="achievements">
+  <h2>Achievements</h2>
+  <div id="achievement-list"></div>
+</div>
+
+<script>
+let gold = 0;
+let goldPerClick = 1;
+let goldPerSecond = 0;
+let level = 1;
+let xp = 0;
+let xpNext = 10;
+
+let clickUpgradeCost = 10;
+let minerCost = 25;
+let superPickaxeCost = 200;
+let autoMinerCost = 500;
+
+const goldDisplay = document.getElementById('gold');
+const gpcDisplay = document.getElementById('gpc');
+const gpsDisplay = document.getElementById('gps');
+const levelDisplay = document.getElementById('level');
+const xpDisplay = document.getElementById('xp');
+const xpNextDisplay = document.getElementById('xpNext');
+
+const clickCostDisplay = document.getElementById('click-cost');
+const minerCostDisplay = document.getElementById('miner-cost');
+const superPickaxeCostDisplay = document.getElementById('super-pickaxe-cost');
+const autoMinerCostDisplay = document.getElementById('auto-miner-cost');
+
+const btnPickaxe = document.getElementById('btn-pickaxe');
+const btnMiner = document.getElementById('btn-miner');
+const btnSuperPickaxe = document.getElementById('btn-super-pickaxe');
+const btnAutoMiner = document.getElementById('btn-auto-miner');
+
+const achievementList = document.getElementById('achievement-list');
+
+const achievements = [
+  { id: 'firstGold', name: "First Gold!", desc: "Mine your first gold.", condition: () => gold >= 1, unlocked: false },
+  { id: 'rich', name: "Getting Rich", desc: "Reach 100 gold.", condition: () => gold >= 100, unlocked: false },
+  { id: 'minerBoss', name: "Miner Boss", desc: "Hire 5 miners.", condition: () => upgrades.miners >= 5, unlocked: false },
+  { id: 'superPickaxeUnlocked', name: "Super Pickaxe!", desc: "Buy the Super Pickaxe upgrade.", condition: () => upgrades.superPickaxeBought, unlocked: false },
+  { id: 'autoMinerUnlocked', name: "Auto Miner!", desc: "Buy the Auto Miner upgrade.", condition: () => upgrades.autoMinerBought, unlocked: false },
+  { id: 'level10', name: "Level 10!", desc: "Reach level 10.", condition: () => level >= 10, unlocked: false },
+];
+
+const upgrades = {
+  pickaxeLevel: 0,
+  miners: 0,
+  superPickaxeBought: false,
+  autoMinerBought: false
+};
+
+function updateDisplay() {
+  goldDisplay.textContent = Math.floor(gold);
+  gpcDisplay.textContent = goldPerClick;
+  gpsDisplay.textContent = goldPerSecond.toFixed(1);
+  levelDisplay.textContent = level;
+  xpDisplay.textContent = xp;
+  xpNextDisplay.textContent = xpNext;
+
+  clickCostDisplay.textContent = clickUpgradeCost;
+  minerCostDisplay.textContent = minerCost;
+  superPickaxeCostDisplay.textContent = superPickaxeCost;
+  autoMinerCostDisplay.textContent = autoMinerCost;
+
+  btnSuperPickaxe.disabled = upgrades.pickaxeLevel < 5 || upgrades.superPickaxeBought;
+  btnAutoMiner.disabled = upgrades.miners < 5 || upgrades.autoMinerBought;
+
+  checkAchievements();
+}
+
+function gainXP(amount) {
+  xp += amount;
+  while (xp >= xpNext) {
+    xp -= xpNext;
+    levelUp();
+  }
+}
+
+function levelUp() {
+  level++;
+  xpNext = Math.floor(xpNext * 1.5);
+  // Increase passive income with levels
+  goldPerSecond += 0.5;
+  message(`${level} Level reached! Gold per second increased!`);
+}
+
+function message(text) {
+  // Could show a small notification here (alert is annoying)
+  console.log(text);
+}
+
+// Upgrade handlers
+btnPickaxe.onclick = () => {
+  if (gold >= clickUpgradeCost) {
+    gold -= clickUpgradeCost;
+    upgrades.pickaxeLevel++;
+    goldPerClick += 1;
+    clickUpgradeCost = Math.floor(clickUpgradeCost * 1.7);
+    gainXP(5);
+    updateDisplay();
+  } else alert('Not enough gold!');
+};
+
+btnMiner.onclick = () => {
+  if (gold >= minerCost) {
+    gold -= minerCost;
+    upgrades.miners++;
+    goldPerSecond += 1;
+    minerCost = Math.floor(minerCost * 1.6);
+    gainXP(10);
+    updateDisplay();
+  } else alert('Not enough gold!');
+};
+
+btnSuperPickaxe.onclick = () => {
+  if (gold >= superPickaxeCost && !upgrades.superPickaxeBought) {
+    gold -= superPickaxeCost;
+    upgrades.superPickaxeBought = true;
+    goldPerClick += 5;
+    gainXP(50);
+    updateDisplay();
+  } else alert('Not enough gold or already bought!');
+};
+
+btnAutoMiner.onclick = () => {
+  if (gold >= autoMinerCost && !upgrades.autoMinerBought) {
+    gold -= autoMinerCost;
+    upgrades.autoMinerBought = true;
+    goldPerSecond += 5;
+    gainXP(75);
+    updateDisplay();
+  } else alert('Not enough gold or already bought!');
+};
+
+document.getElementById('mine-btn').addEventListener('click', () => {
+  gold += goldPerClick;
+  gainXP(1);
+  updateDisplay();
+});
+
+// Passive gold income every second
+setInterval(() => {
+  gold += goldPerSecond;
+  updateDisplay();
+}, 1000);
+
+// Achievements system
+function checkAchievements() {
+  achievements.forEach(a => {
+    if (!a.unlocked && a.condition()) {
+      a.unlocked = true;
+      addAchievement(a);
+    }
+  });
+}
+
+function addAchievement(achievement) {
+  const div = document.createElement('div');
+  div.className = 'achievement unlocked';
+  div.textContent = `🏆 ${achievement.name} - ${achievement.desc}`;
+  achievementList.appendChild(div);
+  // Could add sound or animation here
+}
+
+// Initialize
+updateDisplay();
+checkAchievements();
+</script>
+
+</body>
+</html>

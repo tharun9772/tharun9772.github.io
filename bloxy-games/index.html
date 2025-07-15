@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bloxy Games</title>
+<style>
+  /* Reset & base */
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #121212;
+    color: #f0f0f0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header {
+    background: #1e88e5;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    box-shadow: 0 2px 10px rgba(30,136,229,0.6);
+  }
+  main {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+  .menu-container {
+    background: #212121;
+    padding: 2rem 3rem;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.8);
+    max-width: 400px;
+    width: 100%;
+  }
+  .menu-title {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #64b5f6;
+  }
+  ul.game-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 2rem 0;
+  }
+  ul.game-list li {
+    margin: 1rem 0;
+  }
+  ul.game-list li a {
+    display: block;
+    padding: 1rem 1.5rem;
+    background: #1e88e5;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #fff;
+    font-weight: 600;
+    font-size: 1.25rem;
+    box-shadow: 0 4px 10px rgba(30,136,229,0.4);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  ul.game-list li a:hover,
+  ul.game-list li a:focus {
+    background: #1565c0;
+    box-shadow: 0 6px 14px rgba(21,101,192,0.7);
+    outline: none;
+  }
+  footer {
+    background: #1e88e5;
+    color: #e3f2fd;
+    padding: 1rem 2rem;
+    text-align: center;
+    font-size: 0.9rem;
+    box-shadow: 0 -2px 10px rgba(30,136,229,0.6);
+  }
+  footer a {
+    color: #bbdefb;
+    text-decoration: underline;
+  }
+  footer a:hover,
+  footer a:focus {
+    color: #e3f2fd;
+    outline: none;
+  }
+</style>
+</head>
+<body>
+
+<header>Bloxy Games</header>
+
+<main>
+  <nav class="menu-container" aria-label="Games Menu">
+    <h2 class="menu-title">Select A Game</h2>
+    <ul class="game-list">
+      <li><a href="/bloxy-tic-tac-toe" tabindex="0" aria-label="Play Tic Tac Toe">Tic Tac Toe</a></li>
+      <li><a href="/bloxy-idle-mining-clicker" tabindex="0" aria-label="Play Idle Mining Clicker">Idle Mining Clicker</a></li>
+      <li><a href="/bloxy-farming-game" tabindex="0" aria-label="Play Farming Game">Farming Game</a></li>
+    </ul>
+  </nav>
+</main>
+
+<footer>
+  <p>
+    Join our Discord: <a href="https://discord.gg/EmBbjgRFzs" target="_blank" rel="noopener noreferrer">discord.gg/EmBbjgRFzs</a><br />
+    Visit Bloxcraft Studios - Games: <a href="/home" target="_blank" rel="noopener noreferrer">bloxcraft.pages.dev</a>
+  </p>
+</footer>
+
+</body>
+</html>

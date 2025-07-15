@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ultimate Farming Game</title>
+<style>
+  /* Base and night styles (same as before) */
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0; padding: 20px;
+    color: #333;
+    user-select: none;
+    transition: background 1s;
+    background: #a7d6a0;
+  }
+  body.night {
+    background: #2c3e50;
+    color: #ecf0f1;
+  }
+  h1 { text-align: center; margin-bottom: 10px; }
+  #game-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    background: #f0f6ef;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 0 20px #4caf50aa;
+    transition: background 1s, color 1s;
+  }
+  body.night #game-container {
+    background: #34495e;
+    color: #ecf0f1;
+    box-shadow: 0 0 20px #2980b9aa;
+  }
+  #stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-around;
+    margin-bottom: 15px;
+    font-weight: bold;
+  }
+  #field {
+    display: grid;
+    grid-template-columns: repeat(5, 100px);
+    grid-gap: 10px;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+  .plot {
+    width: 100px; height: 100px;
+    background: #8bc34a;
+    border-radius: 8px;
+    border: 2px solid #4caf50;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s, border-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 24px;
+  }
+  body.night .plot {
+    background: #27ae60;
+    border-color: #16a085;
+  }
+  .plot.empty:hover {
+    background: #a5d6a7;
+  }
+  .plot.planted {
+    cursor: default;
+  }
+  .plot.ready {
+    border-color: #fbc02d !important;
+  }
+  .selected {
+    box-shadow: 0 0 10px 3px #fbc02d;
+  }
+  #controls {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  select, button {
+    font-size: 16px;
+    padding: 8px;
+    margin-left: 10px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+  button {
+    background: #4caf50;
+    color: white;
+    transition: background 0.3s;
+  }
+  button:hover:not(:disabled) {
+    background: #388e3c;
+  }
+  button:disabled {
+    background: #a5d6a7;
+    cursor: not-allowed;
+  }
+  #message {
+    text-align: center;
+    font-weight: bold;
+    height: 24px;
+    margin-bottom: 10px;
+    color: #2e7d32;
+  }
+  body.night #message {
+    color: #f1c40f;
+  }
+  #inventory, #animals, #upgrades, #equipment-shop, #quests, #achievements {
+    margin-top: 20px;
+    background: #dcedc8;
+    padding: 15px;
+    border-radius: 12px;
+  }
+  body.night #inventory,
+  body.night #animals,
+  body.night #upgrades,
+  body.night #equipment-shop,
+  body.night #quests,
+  body.night #achievements {
+    background: #2c3e50;
+    color: #ecf0f1;
+  }
+  h3 {
+    margin-top: 0;
+  }
+  #inventory-list, #animal-list, #upgrade-list, #equipment-list, #quest-list, #achievement-list {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  .inventory-item, .animal-item, .upgrade-item, .equipment-item, .quest-item, .achievement-item {
+    background: #aed581;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-weight: bold;
+    box-shadow: 0 2px 6px #7cb342aa;
+    position: relative;
+    max-width: 160px;
+  }
+  body.night .inventory-item,
+  body.night .animal-item,
+  body.night .upgrade-item,
+  body.night .equipment-item,
+  body.night .quest-item,
+  body.night .achievement-item {
+    background: #16a085;
+    box-shadow: 0 2px 6px #1abc9caa;
+  }
+  .sell-btn {
+    position: absolute;
+    top: 2px; right: 4px;
+    font-size: 12px;
+    background: #e53935;
+    border-radius: 4px;
+    color: white;
+    padding: 1px 6px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .sell-btn:hover {
+    background: #b71c1c;
+  }
+  .completed {
+    text-decoration: line-through;
+    opacity: 0.7;
+  }
+  .bonus-active {
+    color: #d32f2f;
+    font-weight: 900;
+  }
+</style>
+</head>
+<body>
+
+<h1>Ultimate Farming Game 🌱</h1>
+
+<div id="game-container">
+  <div id="stats">
+    <div>Money: $<span id="money">0</span></div>
+    <div>Day: <span id="day">1</span></div>
+    <div>Fertilizer Level: <span id="fertilizer-level">0</span></div>
+    <div>Watering Level: <span id="watering-level">0</span></div>
+    <div>Greenhouse: <span id="greenhouse-level">0</span></div>
+    <div>Animal Feed: <span id="animal-feed-level">0</span></div>
+    <div>Equipment Bonus: <span id="equipment-bonus">0%</span></div>
+    <div>Money Bonus: <span id="money-bonus" class="bonus-active" style="display:none;">+0%</span></div>
+  </div>
+
+  <div id="field"></div>
+
+  <div id="controls">
+    <label for="crop-select">Choose crop:</label>
+    <select id="crop-select"></select>
+    <button id="plant-btn">Plant</button>
+    <button id="harvest-btn" disabled>Harvest</button>
+  </div>
+
+  <div id="message"></div>
+
+  <div id="inventory">
+    <h3>Inventory</h3>
+    <div id="inventory-list"></div>
+  </div>
+
+  <div id="animals">
+    <h3>Animals</h3>
+    <div id="animal-list"></div>
+    <button id="buy-chicken">Buy Chicken ($50)</button>
+    <button id="buy-cow">Buy Cow ($200)</button>
+    <button id="buy-sheep">Buy Sheep ($150)</button>
+    <button id="buy-pig">Buy Pig ($250)</button>
+    <button id="buy-bee">Buy Bee Hive ($300)</button>
+  </div>
+
+  <div id="upgrades">
+    <h3>Upgrades</h3>
+    <button id="buy-fertilizer">Buy Fertilizer Upgrade (+10% faster growth) - $100</button>
+    <button id="buy-watering">Buy Watering Upgrade (+10% faster growth) - $100</button>
+    <button id="buy-greenhouse">Buy Greenhouse (Halves grow time) - $500</button>
+    <button id="buy-animal-feed">Buy Animal Feed (Doubles animal products) - $300</button>
+  </div>
+
+  <div id="equipment-shop">
+    <h3>Equipment Shop</h3>
+    <button id="buy-equipment-1">Buy Better Tools (+5% crop profit) - $150</button>
+    <button id="buy-equipment-2">Buy Advanced Tools (+10% crop profit) - $300</button>
+  </div>
+
+  <div id="quests">
+    <h3>Quests</h3>
+    <div id="quest-list"></div>
+  </div>
+
+  <div id="achievements">
+    <h3>Achievements</h3>
+    <div id="achievement-list"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const moneyEl = document.getElementById('money');
+  const dayEl = document.getElementById('day');
+  const fieldEl = document.getElementById('field');
+  const cropSelect = document.getElementById('crop-select');
+  const plantBtn = document.getElementById('plant-btn');
+  const harvestBtn = document.getElementById('harvest-btn');
+  const messageEl = document.getElementById('message');
+  const inventoryList = document.getElementById('inventory-list');
+  const animalList = document.getElementById('animal-list');
+  const questList = document.getElementById('quest-list');
+  const achievementList = document.getElementById('achievement-list');
+  const fertilizerLevelEl = document.getElementById('fertilizer-level');
+  const wateringLevelEl = document.getElementById('watering-level');
+  const greenhouseLevelEl = document.getElementById('greenhouse-level');
+  const animalFeedLevelEl = document.getElementById('animal-feed-level');
+  const equipmentBonusEl = document.getElementById('equipment-bonus');
+  const moneyBonusEl = document.getElementById('money-bonus');
+
+  const buyChickenBtn = document.getElementById('buy-chicken');
+  const buyCowBtn = document.getElementById('buy-cow');
+  const buySheepBtn = document.getElementById('buy-sheep');
+  const buyPigBtn = document.getElementById('buy-pig');
+  const buyBeeBtn = document.getElementById('buy-bee');
+  const buyFertilizerBtn = document.getElementById('buy-fertilizer');
+  const buyWateringBtn = document.getElementById('buy-watering');
+  const buyGreenhouseBtn = document.getElementById('buy-greenhouse');
+  const buyAnimalFeedBtn = document.getElementById('buy-animal-feed');
+  const buyEquip1Btn = document.getElementById('buy-equipment-1');
+  const buyEquip2Btn = document.getElementById('buy-equipment-2');
+
+  const FIELD_SIZE = 25; // 5x5 grid
+  const plots = [];
+  let selectedPlot = null;
+
+  // Game state variables
+  let money = 0;
+  let day = 1;
+
+  // Upgrades
+  let fertilizerLevel = 0;
+  let wateringLevel = 0;
+  let greenhouseLevel = 0;
+  let animalFeedLevel = 0;
+  let equipmentBonus = 0; // percent
+
+  // Bonus from achievements - percent extra money
+  let moneyBonusPercent = 0;
+  let moneyBonusTurnsLeft = 0;
+
+  // Animals counts
+  let chickens = 0;
+  let cows = 0;
+  let sheep = 0;
+  let pigs = 0;
+  let bees = 0;
+
+  // Animal product inventory
+  const animalProducts = {
+    eggs: 0,
+    milk: 0,
+    wool: 0,
+    truffles: 0,
+    honey: 0
+  };
+
+  // Crop data with new crops added
+  const crops = [
+    { id: 'wheat', name: 'Wheat', growTime: 3, sellPrice: 5, img: '🌾' },
+    { id: 'carrot', name: 'Carrot', growTime: 5, sellPrice: 10, img: '🥕' },
+    { id: 'potato', name: 'Potato', growTime: 7, sellPrice: 15, img: '🥔' },
+    { id: 'corn', name: 'Corn', growTime: 10, sellPrice: 25, img: '🌽' },
+    { id: 'tomato', name: 'Tomato', growTime: 6, sellPrice: 18, img: '🍅' },
+    { id: 'strawberry', name: 'Strawberry', growTime: 8, sellPrice: 30, img: '🍓' },
+    { id: 'blueberry', name: 'Blueberry', growTime: 7, sellPrice: 35, img: '🫐' },
+    { id: 'pumpkin', name: 'Pumpkin', growTime: 12, sellPrice: 60, img: '🎃' }
+  ];
+
+  // Inventory for crops
+  const inventory = {};
+
+  // Quests - daily objectives
+  const quests = [
+    { id: 1, description: 'Harvest 5 crops', type: 'harvest', target: 5, progress: 0, completed: false, reward: 50 },
+    { id: 2, description: 'Buy 2 animals', type: 'buyAnimal', target: 2, progress: 0, completed: false, reward: 75 },
+    { id: 3, description: 'Reach day 10', type: 'reachDay', target: 10, progress: 0, completed: false, reward: 100 },
+  ];
+
+  // Achievements - milestones with bonuses
+  const achievements = [
+    { id: 1, description: 'Harvest 50 crops', condition: (game) => game.totalHarvested >= 50, rewardMoney: 200, bonusPercent: 20, bonusDays: 3, unlocked: false },
+    { id: 2, description: 'Own 10 animals', condition: (game) => game.totalAnimals() >= 10, rewardMoney: 150, bonusPercent: 10, bonusDays: 2, unlocked: false },
+    { id: 3, description: 'Reach day 20', condition: (game) => game.day >= 20, rewardMoney: 300, bonusPercent: 30, bonusDays: 5, unlocked: false },
+  ];
+
+  // Track total harvested crops and total animals bought
+  let totalHarvested = 0;
+  let totalAnimalsBought = 0;
+
+  // Initialize field
+  function initField() {
+    for (let i = 0; i < FIELD_SIZE; i++) {
+      const plot = {
+        index: i,
+        plantedCrop: null,
+        plantDay: null,
+        element: document.createElement('div')
+      };
+      plot.element.classList.add('plot', 'empty');
+      plot.element.addEventListener('click', () => selectPlot(i));
+      fieldEl.appendChild(plot.element);
+      plots.push(plot);
+    }
+  }
+
+  // Populate crop select dropdown
+  function initCropSelect() {
+    crops.forEach(crop => {
+      const option = document.createElement('option');
+      option.value = crop.id;
+      option.textContent = `${crop.name} (Grow: ${crop.growTime} days, Sell: $${crop.sellPrice})`;
+      cropSelect.appendChild(option);
+    });
+  }
+
+  // Select a plot
+  function selectPlot(index) {
+    if (selectedPlot !== null) {
+      plots[selectedPlot].element.classList.remove('selected');
+    }
+    selectedPlot = index;
+    plots[index].element.classList.add('selected');
+    updateButtons();
+    updateMessage('');
+  }
+
+  // Plant crop on selected plot
+  function plantCrop() {
+    if (selectedPlot === null) {
+      updateMessage('Select a plot first!');
+      return;
+    }
+    const plot = plots[selectedPlot];
+    if (plot.plantedCrop !== null) {
+      updateMessage('Plot already planted!');
+      return;
+    }
+    const cropId = cropSelect.value;
+    const crop = crops.find(c => c.id === cropId);
+    if (!crop) {
+      updateMessage('Invalid crop!');
+      return;
+    }
+    plot.plantedCrop = crop;
+    plot.plantDay = day;
+    plot.element.classList.remove('empty');
+    plot.element.classList.add('planted');
+    plot.element.textContent = crop.img;
+    updateButtons();
+    updateMessage(`Planted ${crop.name} on plot #${plot.index + 1}`);
+  }
+
+  // Harvest crop from selected plot
+  function harvestCrop() {
+    if (selectedPlot === null) {
+      updateMessage('Select a plot first!');
+      return;
+    }
+    const plot = plots[selectedPlot];
+    if (!plot.plantedCrop) {
+      updateMessage('No crop to harvest here!');
+      return;
+    }
+    if (!isCropReady(plot)) {
+      updateMessage('Crop is not ready yet!');
+      return;
+    }
+    const crop = plot.plantedCrop;
+    addToInventory(crop.id, 1);
+    const basePrice = crop.sellPrice;
+    const sellPrice = Math.floor(basePrice * (1 + equipmentBonus / 100) * (1 + moneyBonusPercent / 100));
+    money += sellPrice;
+    totalHarvested++;
+    checkQuests('harvest', 1);
+    checkAchievements();
+
+    plot.plantedCrop = null;
+    plot.plantDay = null;
+    plot.element.classList.remove('planted', 'ready');
+    plot.element.classList.add('empty');
+    plot.element.textContent = '';
+    updateButtons();
+    updateMessage(`Harvested ${crop.name} for $${sellPrice}`);
+    updateStats();
+  }
+
+  // Check if crop is ready for harvest, factoring upgrades
+  function isCropReady(plot) {
+    if (!plot.plantedCrop) return false;
+    let growTime = plot.plantedCrop.growTime;
+    // Reduce grow time by fertilizer and watering levels (10% each)
+    growTime = growTime * (1 - 0.1 * fertilizerLevel) * (1 - 0.1 * wateringLevel);
+    // Greenhouse halves grow time
+    if (greenhouseLevel > 0) growTime = growTime / 2;
+    // Grow time cannot be less than 1 day
+    growTime = Math.max(1, growTime);
+    return (day - plot.plantDay) >= growTime;
+  }
+
+  // Add items to inventory
+  function addToInventory(item, qty) {
+    if (!inventory[item]) inventory[item] = 0;
+    inventory[item] += qty;
+    renderInventory();
+  }
+
+  // Render inventory with sell buttons
+  function renderInventory() {
+    inventoryList.innerHTML = '';
+    for (const [item, qty] of Object.entries(inventory)) {
+      if (qty > 0) {
+        const crop = crops.find(c => c.id === item);
+        const sellPrice = crop ? crop.sellPrice : 0;
+        const div = document.createElement('div');
+        div.className = 'inventory-item';
+        div.textContent = `${crop ? crop.img : ''} ${crop ? crop.name : item} x${qty} ($${sellPrice} each)`;
+        const sellBtn = document.createElement('div');
+        sellBtn.className = 'sell-btn';
+        sellBtn.textContent = 'Sell';
+        sellBtn.title = `Sell all ${crop ? crop.name : item}`;
+        sellBtn.addEventListener('click', () => sellItem(item));
+        div.appendChild(sellBtn);
+        inventoryList.appendChild(div);
+      }
+    }
+    // Show animal products also
+    for (const [product, qty] of Object.entries(animalProducts)) {
+      if (qty > 0) {
+        const productName = product.charAt(0).toUpperCase() + product.slice(1);
+        const div = document.createElement('div');
+        div.className = 'inventory-item';
+        div.textContent = `${productName} x${qty} ($${getAnimalProductPrice(product)})`;
+        const sellBtn = document.createElement('div');
+        sellBtn.className = 'sell-btn';
+        sellBtn.textContent = 'Sell';
+        sellBtn.title = `Sell all ${productName}`;
+        sellBtn.addEventListener('click', () => sellAnimalProduct(product));
+        div.appendChild(sellBtn);
+        inventoryList.appendChild(div);
+      }
+    }
+  }
+
+  // Sell crop item
+  function sellItem(item) {
+    const qty = inventory[item];
+    if (!qty || qty <= 0) return;
+    const crop = crops.find(c => c.id === item);
+    if (!crop) return;
+    const basePrice = crop.sellPrice;
+    const sellPrice = Math.floor(basePrice * qty * (1 + equipmentBonus / 100) * (1 + moneyBonusPercent / 100));
+    money += sellPrice;
+    inventory[item] = 0;
+    updateMessage(`Sold ${qty} ${crop.name} for $${sellPrice}`);
+    updateStats();
+    renderInventory();
+  }
+
+  // Sell animal product
+  function sellAnimalProduct(product) {
+    const qty = animalProducts[product];
+    if (!qty || qty <= 0) return;
+    const pricePer = getAnimalProductPrice(product);
+    const sellPrice = Math.floor(pricePer * qty * (1 + equipmentBonus / 100) * (1 + moneyBonusPercent / 100));
+    money += sellPrice;
+    animalProducts[product] = 0;
+    updateMessage(`Sold ${qty} ${product} for $${sellPrice}`);
+    updateStats();
+    renderInventory();
+  }
+
+  // Animal product base prices
+  function getAnimalProductPrice(product) {
+    switch (product) {
+      case 'eggs': return 4;
+      case 'milk': return 8;
+      case 'wool': return 10;
+      case 'truffles': return 20;
+      case 'honey': return 15;
+      default: return 5;
+    }
+  }
+
+  // Render animals and buy buttons
+  function renderAnimals() {
+    animalList.innerHTML = '';
+    const animalData = [
+      { name: 'Chicken', count: chickens, price: 50 },
+      { name: 'Cow', count: cows, price: 200 },
+      { name: 'Sheep', count: sheep, price: 150 },
+      { name: 'Pig', count: pigs, price: 250 },
+      { name: 'Bee Hive', count: bees, price: 300 }
+    ];
+    animalData.forEach(animal => {
+      const div = document.createElement('div');
+      div.className = 'animal-item';
+      div.textContent = `${animal.name}s: ${animal.count}`;
+      animalList.appendChild(div);
+    });
+  }
+
+  // Buy animal
+  function buyAnimal(type, cost) {
+    if (money < cost) {
+      updateMessage('Not enough money!');
+      return;
+    }
+    money -= cost;
+    totalAnimalsBought++;
+    checkQuests('buyAnimal', 1);
+    if (type === 'chicken') chickens++;
+    else if (type === 'cow') cows++;
+    else if (type === 'sheep') sheep++;
+    else if (type === 'pig') pigs++;
+    else if (type === 'bee') bees++;
+    updateStats();
+    renderAnimals();
+    updateMessage(`Bought a ${type}!`);
+    checkAchievements();
+  }
+
+  buyChickenBtn.addEventListener('click', () => buyAnimal('chicken', 50));
+  buyCowBtn.addEventListener('click', () => buyAnimal('cow', 200));
+  buySheepBtn.addEventListener('click', () => buyAnimal('sheep', 150));
+  buyPigBtn.addEventListener('click', () => buyAnimal('pig', 250));
+  buyBeeBtn.addEventListener('click', () => buyAnimal('bee', 300));
+
+  // Next day advances time, grows crops, produces animal products
+  function nextDay() {
+    day++;
+    // Grow crops and mark ready plots
+    plots.forEach(plot => {
+      if (plot.plantedCrop) {
+        if (isCropReady(plot)) {
+          plot.element.classList.add('ready');
+        } else {
+          plot.element.classList.remove('ready');
+        }
+      }
+    });
+
+    // Produce animal products with animal feed multiplier
+    const animalMultiplier = 1 + animalFeedLevel;
+    animalProducts.eggs += Math.floor(chickens * animalMultiplier);
+    animalProducts.milk += Math.floor(cows * animalMultiplier);
+    animalProducts.wool += Math.floor(sheep * animalMultiplier);
+    animalProducts.truffles += Math.floor(pigs * animalMultiplier);
+    animalProducts.honey += Math.floor(bees * animalMultiplier);
+
+    // Update quests for day reached
+    checkQuests('reachDay', day);
+
+    // Handle money bonus countdown
+    if (moneyBonusTurnsLeft > 0) {
+      moneyBonusTurnsLeft--;
+      if (moneyBonusTurnsLeft === 0) {
+        moneyBonusPercent = 0;
+        moneyBonusEl.style.display = 'none';
+        updateMessage('Money bonus expired.');
+      }
+    }
+
+    // Day/Night visual toggle
+    if (day % 2 === 0) {
+      document.body.classList.remove('night');
+    } else {
+      document.body.classList.add('night');
+    }
+
+    updateStats();
+    renderInventory();
+    renderAnimals();
+    updateButtons();
+    updateMessage(`Day ${day} begins! Crops growing and animals producing.`);
+  }
+
+  // Upgrades buying
+  function buyUpgrade(type, cost) {
+    if (money < cost) {
+      updateMessage('Not enough money!');
+      return;
+    }
+    money -= cost;
+    if (type === 'fertilizer') fertilizerLevel++;
+    else if (type === 'watering') wateringLevel++;
+    else if (type === 'greenhouse') greenhouseLevel++;
+    else if (type === 'animalFeed') animalFeedLevel++;
+    updateStats();
+    updateMessage(`Bought ${type} upgrade!`);
+  }
+
+  buyFertilizerBtn.addEventListener('click', () => buyUpgrade('fertilizer', 100));
+  buyWateringBtn.addEventListener('click', () => buyUpgrade('watering', 100));
+  buyGreenhouseBtn.addEventListener('click', () => buyUpgrade('greenhouse', 500));
+  buyAnimalFeedBtn.addEventListener('click', () => buyUpgrade('animalFeed', 300));
+
+  // Equipment shop bonuses
+  function buyEquipment(level, cost, bonusPercent, btn) {
+    if (money < cost) {
+      updateMessage('Not enough money!');
+      return;
+    }
+    money -= cost;
+    equipmentBonus += bonusPercent;
+    btn.disabled = true; // one-time purchase
+    updateStats();
+    updateMessage(`Bought equipment for +${bonusPercent}% profit!`);
+  }
+
+  buyEquip1Btn.addEventListener('click', () => buyEquipment(1, 150, 5, buyEquip1Btn));
+  buyEquip2Btn.addEventListener('click', () => buyEquipment(2, 300, 10, buyEquip2Btn));
+
+  // Update stats UI
+  function updateStats() {
+    moneyEl.textContent = money.toFixed(0);
+    dayEl.textContent = day;
+    fertilizerLevelEl.textContent = fertilizerLevel;
+    wateringLevelEl.textContent = wateringLevel;
+    greenhouseLevelEl.textContent = greenhouseLevel;
+    animalFeedLevelEl.textContent = animalFeedLevel;
+    equipmentBonusEl.textContent = equipmentBonus + '%';
+    if (moneyBonusPercent > 0) {
+      moneyBonusEl.textContent = `+${moneyBonusPercent}%`;
+      moneyBonusEl.style.display = 'inline';
+    } else {
+      moneyBonusEl.style.display = 'none';
+    }
+  }
+
+  // Update button states
+  function updateButtons() {
+    if (selectedPlot === null) {
+      plantBtn.disabled = true;
+      harvestBtn.disabled = true;
+      return;
+    }
+    const plot = plots[selectedPlot];
+    plantBtn.disabled = plot.plantedCrop !== null;
+    harvestBtn.disabled = !plot.plantedCrop || !isCropReady(plot);
+  }
+
+  // Show message
+  function updateMessage(text) {
+    messageEl.textContent = text;
+  }
+
+  // Quest system
+  function checkQuests(type, amount) {
+    quests.forEach(q => {
+      if (!q.completed && q.type === type) {
+        q.progress += amount;
+        if (q.progress >= q.target) {
+          q.completed = true;
+          money += q.reward;
+          updateMessage(`Quest completed: "${q.description}"! You earned $${q.reward}`);
+          renderQuests();
+          updateStats();
+          // Trigger achievements re-check
+          checkAchievements();
+        } else {
+          renderQuests();
+        }
+      }
+    });
+  }
+
+  // Render quests list
+  function renderQuests() {
+    questList.innerHTML = '';
+    quests.forEach(q => {
+      const div = document.createElement('div');
+      div.className = 'quest-item' + (q.completed ? ' completed' : '');
+      div.textContent = `${q.description} (${q.progress}/${q.target})${q.completed ? ' ✅' : ''}`;
+      questList.appendChild(div);
+    });
+  }
+
+  // Achievement system
+  function checkAchievements() {
+    achievements.forEach(a => {
+      if (!a.unlocked && a.condition({ totalHarvested, totalAnimals: () => chickens + cows + sheep + pigs + bees, day })) {
+        a.unlocked = true;
+        money += a.rewardMoney;
+        moneyBonusPercent += a.bonusPercent;
+        moneyBonusTurnsLeft = a.bonusDays;
+        updateMessage(`Achievement unlocked: "${a.description}"! Bonus +${a.bonusPercent}% money for ${a.bonusDays} days.`);
+        renderAchievements();
+        updateStats();
+      }
+    });
+  }
+
+  // Render achievements list
+  function renderAchievements() {
+    achievementList.innerHTML = '';
+    achievements.forEach(a => {
+      const div = document.createElement('div');
+      div.className = 'achievement-item' + (a.unlocked ? ' completed' : '');
+      div.textContent = a.description + (a.unlocked ? ' 🎉' : '');
+      achievementList.appendChild(div);
+    });
+  }
+
+  // Initialize game
+  function init() {
+    initField();
+    initCropSelect();
+    updateStats();
+    renderInventory();
+    renderAnimals();
+    renderQuests();
+    renderAchievements();
+    updateButtons();
+    updateMessage('Welcome to Ultimate Farming! Plant crops, buy animals, and complete quests!');
+  }
+
+  init();
+
+  // Plant and harvest buttons events
+  plantBtn.addEventListener('click', plantCrop);
+  harvestBtn.addEventListener('click', harvestCrop);
+
+  // Next day button added dynamically
+  const nextDayBtn = document.createElement('button');
+  nextDayBtn.textContent = 'Next Day';
+  nextDayBtn.style.marginTop = '20px';
+  nextDayBtn.style.fontSize = '18px';
+  nextDayBtn.style.padding = '10px 20px';
+  nextDayBtn.style.borderRadius = '10px';
+  nextDayBtn.style.cursor = 'pointer';
+  nextDayBtn.style.background = '#2e7d32';
+  nextDayBtn.style.color = 'white';
+  nextDayBtn.addEventListener('click', nextDay);
+  document.getElementById('game-container').appendChild(nextDayBtn);
+
+})();
+</script>
+
+</body>
+</html>
